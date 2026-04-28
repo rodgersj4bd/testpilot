@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RFP Discovery Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0f14;
+    --surface: #141820;
+    --surface2: #1c2230;
+    --surface3: #232b3a;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #eef0f4;
+    --text2: #8a92a3;
+    --text3: #555e70;
+    --accent: #3d7fff;
+    --accent-dim: rgba(61,127,255,0.12);
+    --accent-border: rgba(61,127,255,0.35);
+    --green: #2ecc8a;
+    --green-dim: rgba(46,204,138,0.12);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --red: #f05252;
+    --red-dim: rgba(240,82,82,0.1);
+    --teal: #22d3c8;
+    --teal-dim: rgba(34,211,200,0.1);
+    --purple: #9b7fff;
+    --purple-dim: rgba(155,127,255,0.12);
+    --radius: 10px;
+    --radius-lg: 14px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  html { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 22px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 16px; height: 16px; fill: #fff; }
+  .logo-text { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.2px; }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+  .sidebar-section { padding: 18px 12px 6px; }
+  .sidebar-section-label { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    transition: all 0.15s; border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.75; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-badge { margin-left: auto; font-size: 11px; font-weight: 600; background: var(--accent); color: #fff; padding: 1px 7px; border-radius: 999px; }
+  .nav-badge.green { background: var(--green); }
+
+  .sidebar-stats { padding: 14px 12px; margin-top: auto; border-top: 1px solid var(--border); }
+  .mini-stat { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; }
+  .mini-stat-label { color: var(--text3); }
+  .mini-stat-val { color: var(--text); font-weight: 500; font-family: var(--mono); }
+
+  /* ── Main ── */
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .topbar-time { font-size: 12px; color: var(--text3); font-family: var(--mono); }
+
+  .content { padding: 28px; flex: 1; }
+
+  /* ── Metric row ── */
+  .metric-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    transition: border-color 0.15s;
+  }
+  .metric-card:hover { border-color: var(--border2); }
+  .metric-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .metric-val { font-size: 28px; font-weight: 600; color: var(--text); font-family: var(--mono); line-height: 1; }
+  .metric-val.blue { color: var(--accent); }
+  .metric-val.green { color: var(--green); }
+  .metric-val.amber { color: var(--amber); }
+  .metric-val.red { color: var(--red); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  /* ── Panels ── */
+  .panel-row { display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 24px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .panel-body { padding: 18px; }
+
+  /* ── Search / Filters ── */
+  .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .field select, .field input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); color: var(--text); font-family: var(--font);
+    font-size: 13px; padding: 8px 12px; outline: none; transition: border-color 0.15s;
+    appearance: none; -webkit-appearance: none;
+  }
+  .field select:focus, .field input:focus { border-color: var(--accent); }
+  .field select option { background: var(--surface2); }
+
+  .svc-tags { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+  .svc-tag {
+    font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 999px;
+    cursor: pointer; border: 1px solid; transition: all 0.15s; user-select: none;
+  }
+  .svc-tag.on-hsa  { background: rgba(61,127,255,0.15); color: #7ba8ff; border-color: rgba(61,127,255,0.4); }
+  .svc-tag.on-fsa  { background: rgba(46,204,138,0.12); color: #4cd69b; border-color: rgba(46,204,138,0.35); }
+  .svc-tag.on-lsa  { background: rgba(245,166,35,0.12); color: #f5c060; border-color: rgba(245,166,35,0.35); }
+  .svc-tag.on-cobra{ background: rgba(155,127,255,0.12); color: #b59fff; border-color: rgba(155,127,255,0.35); }
+  .svc-tag.off { background: var(--surface2); color: var(--text3); border-color: var(--border); }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); padding: 9px 20px; font-size: 13px; font-weight: 600;
+    font-family: var(--font); cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.87; }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface2); color: var(--text2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 9px 16px; font-size: 13px; font-weight: 500;
+    font-family: var(--font); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: var(--surface3); color: var(--text); }
+  .btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-ghost { background: none; border: none; color: var(--text3); font-size: 12px; cursor: pointer; font-family: var(--font); padding: 0; }
+  .btn-ghost:hover { color: var(--text2); }
+
+  /* ── View tabs ── */
+  .view-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: var(--surface2); border-radius: var(--radius); padding: 4px; width: fit-content; }
+  .vtab { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 7px; border: none; cursor: pointer; background: none; color: var(--text3); font-family: var(--font); transition: all 0.15s; }
+  .vtab.active { background: var(--surface3); color: var(--text); }
+  .vtab-badge { font-size: 10px; background: var(--accent); color: #fff; padding: 1px 5px; border-radius: 999px; margin-left: 4px; }
+
+  /* ── Status bar ── */
+  .status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); min-height: 18px; margin-bottom: 10px; }
+  .spinner { width: 12px; height: 12px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RFP Cards ── */
+  .rfp-list { display: flex; flex-direction: column; gap: 8px; }
+  .rfp-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px 16px;
+    transition: border-color 0.15s, opacity 0.2s;
+    cursor: default;
+  }
+  .rfp-card:hover { border-color: var(--border2); }
+  .rfp-card.is-seen { opacity: 0.45; }
+  .rfp-card.is-seen:hover { opacity: 0.65; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .rfp-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; flex: 1; }
+  .seen-btn {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid; cursor: pointer; font-family: var(--font); transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .seen-btn.unseen { background: var(--surface3); color: var(--text3); border-color: var(--border2); }
+  .seen-btn.unseen:hover { color: var(--green); border-color: var(--green); }
+  .seen-btn.seen { background: var(--green-dim); color: var(--green); border-color: rgba(46,204,138,0.3); }
+  .rfp-org { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.02em; }
+  .b-hsa   { background: rgba(61,127,255,0.15); color: #7ba8ff; }
+  .b-fsa   { background: rgba(46,204,138,0.12); color: #4cd69b; }
+  .b-lsa   { background: rgba(245,166,35,0.12); color: #f5c060; }
+  .b-cobra { background: rgba(155,127,255,0.12); color: #b59fff; }
+  .b-gov   { background: rgba(138,146,163,0.12); color: #8a92a3; }
+  .b-school{ background: rgba(34,211,200,0.1); color: var(--teal); }
+  .b-corp  { background: rgba(46,204,138,0.08); color: #2ecc8a; }
+  .b-new   { background: var(--accent); color: #fff; font-size: 9px; }
+  .b-urgent{ background: var(--red-dim); color: var(--red); }
+  .deadline { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .deadline.urgent { color: var(--red); font-weight: 600; }
+  .rfp-desc { font-size: 12px; color: var(--text3); margin-top: 7px; line-height: 1.5; }
+  .rfp-source { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .rfp-source a { color: var(--accent); text-decoration: none; }
+  .rfp-source a:hover { text-decoration: underline; }
+  .seen-date { font-size: 10px; color: var(--text3); margin-top: 4px; }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 13px; }
+  .empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* ── Activity Feed ── */
+  .feed-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .feed-dot.blue { background: var(--accent); }
+  .feed-dot.green { background: var(--green); }
+  .feed-dot.amber { background: var(--amber); }
+  .feed-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .feed-time { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Quick links ── */
+  .quick-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); text-decoration: none; color: var(--text2);
+    font-size: 13px; font-weight: 500; margin-bottom: 8px; transition: all 0.15s;
+  }
+  .quick-link:hover { background: var(--surface3); border-color: var(--border2); color: var(--text); }
+  .quick-link svg { width: 12px; height: 12px; opacity: 0.5; }
+
+  /* ── Consultant cards ── */
+  .consultant-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 18px;
+    transition: border-color 0.15s;
+  }
+  .consultant-card:hover { border-color: var(--border2); }
+  .consultant-card.is-contacted { opacity: 0.5; }
+  .consultant-card.is-contacted:hover { opacity: 0.7; }
+  .cons-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .cons-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .cons-firm { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .cons-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: 12px; color: var(--text3); }
+  .cons-meta-item { display: flex; align-items: center; gap: 5px; }
+  .cons-meta-item svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .cons-meta-item a { color: var(--accent); text-decoration: none; }
+  .cons-meta-item a:hover { text-decoration: underline; }
+  .cons-specialties { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .cons-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+  .contacted-btn {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid; cursor: pointer; font-family: var(--font); transition: all 0.15s; white-space: nowrap;
+  }
+  .contacted-btn.not-contacted { background: var(--surface3); color: var(--text3); border-color: var(--border2); }
+  .contacted-btn.not-contacted:hover { color: var(--green); border-color: var(--green); }
+  .contacted-btn.contacted { background: var(--green-dim); color: var(--green); border-color: rgba(46,204,138,0.3); }
+  .contacted-date { font-size: 10px; color: var(--text3); margin-top: 5px; }
+  .cons-filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .cons-view-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: var(--surface2); border-radius: var(--radius); padding: 4px; width: fit-content; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
+
+  /* ── API key notice ── */
+  .api-notice {
+    background: var(--amber-dim); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 16px;
+    font-size: 12px; color: var(--amber); display: flex; align-items: flex-start; gap: 8px;
+  }
+  .api-notice a { color: var(--amber); font-weight: 600; }
+  .api-notice.hidden { display: none; }
+
+  .api-key-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .api-key-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 8px 12px; outline: none; }
+  .api-key-row input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">RFP Dashboard</div>
+        <div class="logo-sub">Benefits Administration</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Navigation</div>
+      <button class="nav-item active" onclick="showPage('search')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Search RFPs
+        <span class="nav-badge green" id="newBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('tracker')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Seen Tracker
+      </button>
+      <button class="nav-item" onclick="showPage('consultants')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Consultant Lookup
+        <span class="nav-badge" id="consultantBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('sources')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        RFP Sources
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Services</div>
+      <button class="nav-item" onclick="filterBySvc('HSA')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+        HSA
+      </button>
+      <button class="nav-item" onclick="filterBySvc('FSA')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        FSA
+      </button>
+      <button class="nav-item" onclick="filterBySvc('LSA')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        LSA
+      </button>
+      <button class="nav-item" onclick="filterBySvc('COBRA')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        COBRA
+      </button>
+    </div>
+
+    <div class="sidebar-stats">
+      <div class="mini-stat"><span class="mini-stat-label">Total found</span><span class="mini-stat-val" id="sb-total">—</span></div>
+      <div class="mini-stat"><span class="mini-stat-label">New</span><span class="mini-stat-val" id="sb-new">—</span></div>
+      <div class="mini-stat"><span class="mini-stat-label">Seen</span><span class="mini-stat-val" id="sb-seen">—</span></div>
+      <div class="mini-stat"><span class="mini-stat-label">Urgent</span><span class="mini-stat-val" id="sb-urgent" style="color:var(--red)">—</span></div>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <div class="mini-stat"><span class="mini-stat-label">Consultants</span><span class="mini-stat-val" id="sb-consultants">—</span></div>
+      <div class="mini-stat"><span class="mini-stat-label">Contacted</span><span class="mini-stat-val" id="sb-contacted" style="color:var(--green)">—</span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Search RFPs</div>
+      <div class="topbar-right">
+        <span class="topbar-time" id="clockEl"></span>
+        <button class="btn-secondary" id="saveDriveBtn" style="display:none" onclick="saveToDrive()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save to Drive
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- PAGE: Search -->
+      <div id="page-search">
+        <div class="api-notice" id="apiNotice">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Enter your <strong>Anthropic API key</strong> below to enable live search. Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></span>
+        </div>
+        <div class="api-key-row">
+          <input type="password" id="apiKeyInput" placeholder="sk-ant-…  (paste your Anthropic API key)" oninput="onApiKeyInput()" />
+          <button class="btn-secondary" onclick="toggleKeyVis()">Show</button>
+        </div>
+
+        <div class="panel-row">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Search filters</span>
+            </div>
+            <div class="panel-body">
+              <div class="filter-grid">
+                <div class="field">
+                  <label>Entity type</label>
+                  <select id="entityFilter">
+                    <option value="all">All entities</option>
+                    <option value="government">Government / Cities / States</option>
+                    <option value="school">School districts</option>
+                    <option value="corporation">Private corporations</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Region / State</label>
+                  <input type="text" id="regionInput" placeholder="e.g. Illinois, Texas…" />
+                </div>
+                <div class="field">
+                  <label>Keywords</label>
+                  <input type="text" id="keywordInput" placeholder="e.g. TPA, benefits admin…" />
+                </div>
+              </div>
+
+              <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Service types</div>
+              <div class="svc-tags" id="tagRow">
+                <span class="svc-tag on-hsa"  data-svc="HSA"   onclick="toggleTag(this)">✓ HSA</span>
+                <span class="svc-tag on-fsa"  data-svc="FSA"   onclick="toggleTag(this)">✓ FSA</span>
+                <span class="svc-tag on-lsa"  data-svc="LSA"   onclick="toggleTag(this)">✓ LSA</span>
+                <span class="svc-tag on-cobra"data-svc="COBRA" onclick="toggleTag(this)">✓ COBRA</span>
+              </div>
+
+              <div class="btn-row">
+                <button class="btn-primary" id="runBtn" onclick="runAgent()">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5l10 5.5-10 5.5V2.5z"/></svg>
+                  Search for RFPs
+                </button>
+                <button class="btn-secondary" onclick="markAllSeen()" id="markAllBtn" style="display:none;">Mark all seen</button>
+                <button class="btn-ghost" onclick="clearSeen()" id="clearSeenBtn" style="display:none;">Clear seen history</button>
+              </div>
+
+              <div class="status-bar" id="statusBar"></div>
+            </div>
+          </div>
+
+          <!-- Activity / Quick Links -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Quick links</span></div>
+              <div class="panel-body" style="padding:12px 14px;">
+                <a class="quick-link" href="https://sam.gov/search/?keywords=HSA+FSA+COBRA+administration&index=opp" target="_blank">
+                  SAM.gov
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+                <a class="quick-link" href="https://www.bidnetdirect.com" target="_blank">
+                  BidNet Direct
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+                <a class="quick-link" href="https://www.demandstar.com" target="_blank">
+                  DemandStar
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+                <a class="quick-link" href="https://www.publicpurchase.com" target="_blank">
+                  Public Purchase
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+                <a class="quick-link" href="https://www.ionwave.net" target="_blank">
+                  IonWave
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Activity</span></div>
+              <div class="panel-body" id="activityFeed" style="padding:10px 14px;">
+                <div class="empty-state" style="padding:1.5rem 0">No activity yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="metric-row" id="metricsRow" style="display:none">
+          <div class="metric-card"><div class="metric-label">Total RFPs</div><div class="metric-val blue" id="m-total">0</div><div class="metric-sub">from last search</div></div>
+          <div class="metric-card"><div class="metric-label">New</div><div class="metric-val green" id="m-new">0</div><div class="metric-sub">not yet reviewed</div></div>
+          <div class="metric-card"><div class="metric-label">Seen</div><div class="metric-val" id="m-seen">0</div><div class="metric-sub">already reviewed</div></div>
+          <div class="metric-card"><div class="metric-label">Urgent</div><div class="metric-val red" id="m-urgent">0</div><div class="metric-sub">deadline &lt; 30 days</div></div>
+          <div class="metric-card"><div class="metric-label">HSA</div><div class="metric-val blue" id="m-hsa">0</div></div>
+          <div class="metric-card"><div class="metric-label">FSA</div><div class="metric-val green" id="m-fsa">0</div></div>
+          <div class="metric-card"><div class="metric-label">COBRA</div><div class="metric-val amber" id="m-cobra">0</div></div>
+        </div>
+
+        <!-- Results -->
+        <div class="panel" id="resultsPanel" style="display:none">
+          <div class="panel-header">
+            <span class="panel-title">Results</span>
+            <div class="view-tabs">
+              <button class="vtab active" onclick="setView('all',this)">All <span class="vtab-badge" id="vt-all">0</span></button>
+              <button class="vtab" onclick="setView('new',this)">New <span class="vtab-badge" id="vt-new">0</span></button>
+              <button class="vtab" onclick="setView('seen',this)">Seen <span class="vtab-badge" id="vt-seen">0</span></button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="rfp-list" id="rfpList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: Consultants -->
+      <div id="page-consultants" style="display:none">
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header">
+            <span class="panel-title">Benefit Consultant Lookup</span>
+          </div>
+          <div class="panel-body">
+            <div class="cons-filter-grid">
+              <div class="field">
+                <label>State / Region</label>
+                <select id="consStateFilter">
+                  <option value="">All states</option>
+                  <option>Alabama</option><option>Alaska</option><option>Arizona</option><option>Arkansas</option>
+                  <option>California</option><option>Colorado</option><option>Connecticut</option><option>Delaware</option>
+                  <option>Florida</option><option>Georgia</option><option>Hawaii</option><option>Idaho</option>
+                  <option>Illinois</option><option>Indiana</option><option>Iowa</option><option>Kansas</option>
+                  <option>Kentucky</option><option>Louisiana</option><option>Maine</option><option>Maryland</option>
+                  <option>Massachusetts</option><option>Michigan</option><option>Minnesota</option><option>Mississippi</option>
+                  <option>Missouri</option><option>Montana</option><option>Nebraska</option><option>Nevada</option>
+                  <option>New Hampshire</option><option>New Jersey</option><option>New Mexico</option><option>New York</option>
+                  <option>North Carolina</option><option>North Dakota</option><option>Ohio</option><option>Oklahoma</option>
+                  <option>Oregon</option><option>Pennsylvania</option><option>Rhode Island</option><option>South Carolina</option>
+                  <option>South Dakota</option><option>Tennessee</option><option>Texas</option><option>Utah</option>
+                  <option>Vermont</option><option>Virginia</option><option>Washington</option><option>West Virginia</option>
+                  <option>Wisconsin</option><option>Wyoming</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Firm name</label>
+                <input type="text" id="consFirmInput" placeholder="e.g. Mercer, Aon, local firm…" />
+              </div>
+              <div class="field">
+                <label>Additional keywords</label>
+                <input type="text" id="consKeywordInput" placeholder="e.g. public sector, schools…" />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn-primary" id="consRunBtn" onclick="runConsultantSearch()">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5l10 5.5-10 5.5V2.5z"/></svg>
+                Find Consultants
+              </button>
+              <button class="btn-ghost" onclick="clearContacted()" id="clearContactedBtn" style="display:none;">Clear contacted history</button>
+            </div>
+            <div class="status-bar" id="consStatusBar"></div>
+          </div>
+        </div>
+
+        <!-- Consultant metrics -->
+        <div class="metric-row" id="consMetricsRow" style="display:none;">
+          <div class="metric-card"><div class="metric-label">Consultants found</div><div class="metric-val blue" id="cm-total">0</div></div>
+          <div class="metric-card"><div class="metric-label">Not contacted</div><div class="metric-val amber" id="cm-new">0</div></div>
+          <div class="metric-card"><div class="metric-label">Contacted</div><div class="metric-val green" id="cm-contacted">0</div></div>
+          <div class="metric-card"><div class="metric-label">With email</div><div class="metric-val" id="cm-email">0</div></div>
+          <div class="metric-card"><div class="metric-label">With phone</div><div class="metric-val" id="cm-phone">0</div></div>
+        </div>
+
+        <!-- Consultant results panel -->
+        <div class="panel" id="consResultsPanel" style="display:none;">
+          <div class="panel-header">
+            <span class="panel-title">Results</span>
+            <div class="cons-view-tabs">
+              <button class="vtab active" onclick="setConsView('all',this)">All <span class="vtab-badge" id="cvt-all">0</span></button>
+              <button class="vtab" onclick="setConsView('new',this)">Not contacted <span class="vtab-badge" id="cvt-new">0</span></button>
+              <button class="vtab" onclick="setConsView('contacted',this)">Contacted <span class="vtab-badge" id="cvt-contacted">0</span></button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="consultantList" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: Tracker -->
+
+      <div id="page-tracker" style="display:none">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Seen RFP tracker</span>
+            <button class="btn-ghost" onclick="clearSeen()">Clear all</button>
+          </div>
+          <div class="panel-body">
+            <div id="trackerContent" class="rfp-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: Sources -->
+      <div id="page-sources" style="display:none">
+        <div class="metric-row">
+          <div class="metric-card"><div class="metric-label">Databases indexed</div><div class="metric-val blue">8+</div></div>
+          <div class="metric-card"><div class="metric-label">Entity types</div><div class="metric-val green">3</div></div>
+          <div class="metric-card"><div class="metric-label">Service categories</div><div class="metric-val amber">4</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Procurement databases searched</span></div>
+          <div class="panel-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">SAM.gov</div>
+                <div style="font-size:12px;color:var(--text3);">Federal government opportunities. Covers all federal agencies and many state/local pass-throughs.</div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">BidNet Direct</div>
+                <div style="font-size:12px;color:var(--text3);">Municipal and county procurement. Strong coverage of cities, counties, and school districts.</div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">DemandStar</div>
+                <div style="font-size:12px;color:var(--text3);">Government procurement marketplace covering thousands of agencies nationwide.</div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Public Purchase</div>
+                <div style="font-size:12px;color:var(--text3);">e-Procurement for government agencies including utilities, schools, and municipalities.</div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">State portals</div>
+                <div style="font-size:12px;color:var(--text3);">Individual state procurement portals — Illinois, Indiana, Ohio, Texas, and others searched by region.</div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">IonWave & others</div>
+                <div style="font-size:12px;color:var(--text3);">Regional eProcurement platforms used by municipalities across the Midwest and South.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let allRFPs = [];
+let seenRFPs = {};
+let activityLog = [];
+let activeTags = new Set(['HSA','FSA','LSA','COBRA']);
+let currentView = 'all';
+const STORAGE_KEY = 'rfp_seen_v1';
+
+function loadSeen() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) seenRFPs = JSON.parse(s); } catch(e) {}
+  updateClearBtn();
+}
+
+function saveSeen() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(seenRFPs)); } catch(e) {}
+}
+
+function rfpKey(rfp) {
+  return ((rfp.title||'') + '|' + (rfp.organization||'')).toLowerCase().replace(/\s+/g,'_').slice(0,80);
+}
+
+function onApiKeyInput() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  document.getElementById('apiNotice').classList.toggle('hidden', val.length > 10);
+}
+
+function toggleKeyVis() {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function toggleTag(el) {
+  const svc = el.dataset.svc;
+  if (activeTags.has(svc)) {
+    if (activeTags.size === 1) return;
+    activeTags.delete(svc);
+    el.className = 'svc-tag off';
+    el.textContent = svc;
+  } else {
+    activeTags.add(svc);
+    const cls = {HSA:'on-hsa',FSA:'on-fsa',LSA:'on-lsa',COBRA:'on-cobra'}[svc];
+    el.className = 'svc-tag ' + cls;
+    el.textContent = '✓ ' + svc;
+  }
+}
+
+function showPage(p) {
+  ['search','tracker','sources','consultants'].forEach(id => {
+    document.getElementById('page-'+id).style.display = id===p ? '' : 'none';
+  });
+  const titles = {search:'Search RFPs',tracker:'Seen Tracker',sources:'RFP Sources',consultants:'Consultant Lookup'};
+  document.getElementById('topbarTitle').textContent = titles[p]||p;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const idx = {search:0,tracker:1,consultants:2,sources:3}[p];
+  document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
+  if (p === 'tracker') renderTrackerPage();
+}
+
+function filterBySvc(svc) {
+  showPage('search');
+  activeTags = new Set([svc]);
+  document.querySelectorAll('.svc-tag').forEach(el => {
+    const s = el.dataset.svc;
+    if (s === svc) {
+      const cls = {HSA:'on-hsa',FSA:'on-fsa',LSA:'on-lsa',COBRA:'on-cobra'}[s];
+      el.className = 'svc-tag ' + cls;
+      el.textContent = '✓ ' + s;
+    } else {
+      el.className = 'svc-tag off';
+      el.textContent = s;
+    }
+  });
+}
+
+function setView(v, el) {
+  currentView = v;
+  document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderRFPList();
+}
+
+function setStatus(msg, loading) {
+  const bar = document.getElementById('statusBar');
+  bar.innerHTML = msg ? (loading ? '<div class="spinner"></div>' : '') + '<span>'+msg+'</span>' : '';
+}
+
+function addActivity(msg, type) {
+  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  activityLog.unshift({msg, type, time: now});
+  if (activityLog.length > 10) activityLog.pop();
+  renderActivity();
+}
+
+function renderActivity() {
+  const el = document.getElementById('activityFeed');
+  if (!activityLog.length) { el.innerHTML = '<div class="empty-state" style="padding:1.5rem 0">No activity yet</div>'; return; }
+  el.innerHTML = activityLog.map(a =>
+    `<div class="feed-item"><div class="feed-dot ${a.type||'blue'}"></div><div><div class="feed-text">${a.msg}</div><div class="feed-time">${a.time}</div></div></div>`
+  ).join('');
+}
+
+function updateClearBtn() {
+  const hasSeen = Object.keys(seenRFPs).length > 0;
+  document.getElementById('clearSeenBtn').style.display = hasSeen ? 'inline' : 'none';
+}
+
+function updateSidebarStats() {
+  const total = allRFPs.length;
+  const seenCount = allRFPs.filter(r => !!seenRFPs[rfpKey(r)]).length;
+  const newCount = total - seenCount;
+  const urgentCount = allRFPs.filter(r => r.isUrgent && !seenRFPs[rfpKey(r)]).length;
+  document.getElementById('sb-total').textContent = total || '—';
+  document.getElementById('sb-new').textContent = newCount || '—';
+  document.getElementById('sb-seen').textContent = seenCount || '—';
+  document.getElementById('sb-urgent').textContent = urgentCount || '—';
+  const nb = document.getElementById('newBadge');
+  if (newCount > 0) { nb.style.display='inline'; nb.textContent = newCount; } else { nb.style.display='none'; }
+}
+
+async function toggleSeen(key, btn, cardEl) {
+  if (seenRFPs[key]) {
+    delete seenRFPs[key];
+    btn.className = 'seen-btn unseen';
+    btn.innerHTML = eyeOff() + ' Mark seen';
+    cardEl.classList.remove('is-seen');
+    const sd = cardEl.querySelector('.seen-date'); if (sd) sd.remove();
+    addActivity('Unmarked an RFP as seen', 'amber');
+  } else {
+    const now = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    seenRFPs[key] = now;
+    btn.className = 'seen-btn seen';
+    btn.innerHTML = eyeOn() + ' Seen';
+    cardEl.classList.add('is-seen');
+    let sd = cardEl.querySelector('.seen-date');
+    if (!sd) { sd = document.createElement('div'); sd.className='seen-date'; cardEl.appendChild(sd); }
+    sd.textContent = 'Marked seen ' + now;
+    addActivity('Marked RFP as seen', 'green');
+  }
+  saveSeen();
+  updateClearBtn();
+  updateSidebarStats();
+  updateTabCounts();
+  if (currentView !== 'all') renderRFPList();
+}
+
+function eyeOn()  { return '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7S18 5 12 5zm0 12a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>'; }
+function eyeOff() { return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'; }
+
+async function markAllSeen() {
+  const now = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  allRFPs.forEach(r => { const k=rfpKey(r); if (!seenRFPs[k]) seenRFPs[k]=now; });
+  saveSeen();
+  renderRFPList();
+  updateClearBtn();
+  updateSidebarStats();
+  updateTabCounts();
+  addActivity(`Marked all ${allRFPs.length} RFPs as seen`, 'green');
+}
+
+async function clearSeen() {
+  seenRFPs = {};
+  saveSeen();
+  renderRFPList();
+  updateClearBtn();
+  updateSidebarStats();
+  updateTabCounts();
+  addActivity('Cleared seen history', 'amber');
+}
+
+function updateTabCounts() {
+  const total = allRFPs.length;
+  const seenCount = allRFPs.filter(r => !!seenRFPs[rfpKey(r)]).length;
+  const newCount = total - seenCount;
+  document.getElementById('vt-all').textContent = total;
+  document.getElementById('vt-new').textContent = newCount;
+  document.getElementById('vt-seen').textContent = seenCount;
+}
+
+async function runAgent() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey) { setStatus('Please enter your Anthropic API key above.', false); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  allRFPs = [];
+  document.getElementById('resultsPanel').style.display = 'none';
+  document.getElementById('metricsRow').style.display = 'none';
+  document.getElementById('saveDriveBtn').style.display = 'none';
+  document.getElementById('markAllBtn').style.display = 'none';
+
+  const entity = document.getElementById('entityFilter').value;
+  const region = document.getElementById('regionInput').value.trim();
+  const keywords = document.getElementById('keywordInput').value.trim();
+  const services = [...activeTags].join(', ');
+
+  const entityLabel = {
+    all: 'government entities, school districts, and private corporations',
+    government: 'government and municipal entities',
+    school: 'school districts',
+    corporation: 'private corporations'
+  }[entity];
+
+  const regionPart = region ? ` in ${region}` : ' across the United States';
+  const keywordPart = keywords ? ` Also look for: ${keywords}.` : '';
+
+  addActivity(`Searching for ${services} RFPs${region ? ' in '+region : ''}…`, 'blue');
+
+  const prompt = `You are an RFP research specialist. Search the web and find currently active or recently posted RFPs (Requests for Proposals) for ${services} administration services${regionPart} from ${entityLabel}.
+
+For each RFP found, return a JSON array with objects containing:
+- title: full RFP title
+- organization: issuing organization name
+- entityType: one of "government", "school", "corporation"
+- services: array of service types from [HSA, FSA, LSA, COBRA] mentioned
+- deadline: submission deadline date string (or "Not specified")
+- isUrgent: true if deadline is within 30 days
+- sourceUrl: direct URL to the RFP or procurement page
+- sourceName: name of the source/database
+- description: 1-2 sentence summary
+- postedDate: when posted (or "Unknown")
+
+Search SAM.gov, BidNet Direct, DemandStar, state procurement portals, and public procurement databases.${keywordPart}
+
+Return ONLY valid JSON array, no markdown, no preamble. Find at least 6-10 results if possible.`;
+
+  setStatus('Searching procurement databases…', true);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      setStatus('API error: ' + (err.error?.message || res.statusText), false);
+      btn.disabled = false;
+      return;
+    }
+
+    const data = await res.json();
+    setStatus('Processing results…', true);
+
+    const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+    let jsonStr = textBlocks.replace(/```json|```/g,'').trim();
+    const s = jsonStr.indexOf('['), e = jsonStr.lastIndexOf(']');
+    if (s !== -1 && e !== -1) jsonStr = jsonStr.slice(s, e+1);
+
+    let rfps = [];
+    try { rfps = JSON.parse(jsonStr); } catch(err) { rfps = []; }
+
+    allRFPs = rfps;
+    setStatus('');
+    renderMetrics();
+    renderRFPList();
+    updateSidebarStats();
+    updateTabCounts();
+
+    if (rfps.length > 0) {
+      document.getElementById('resultsPanel').style.display = '';
+      document.getElementById('metricsRow').style.display = '';
+      document.getElementById('saveDriveBtn').style.display = 'inline-flex';
+      document.getElementById('markAllBtn').style.display = 'inline-flex';
+      addActivity(`Found ${rfps.length} RFPs matching your criteria`, 'green');
+    } else {
+      setStatus('No RFPs found. Try broadening your search.');
+      addActivity('Search returned no results', 'amber');
+    }
+  } catch(err) {
+    setStatus('Search failed: ' + err.message);
+    addActivity('Search error: ' + err.message, 'amber');
+  }
+
+  btn.disabled = false;
+}
+
+function renderMetrics() {
+  const total = allRFPs.length;
+  const seenCount = allRFPs.filter(r => !!seenRFPs[rfpKey(r)]).length;
+  const newCount = total - seenCount;
+  const urgentCount = allRFPs.filter(r => r.isUrgent).length;
+  const svc = {HSA:0,FSA:0,COBRA:0};
+  allRFPs.forEach(r => (r.services||[]).forEach(s => { if(svc[s]!==undefined) svc[s]++; }));
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-new').textContent = newCount;
+  document.getElementById('m-seen').textContent = seenCount;
+  document.getElementById('m-urgent').textContent = urgentCount;
+  document.getElementById('m-hsa').textContent = svc.HSA;
+  document.getElementById('m-fsa').textContent = svc.FSA;
+  document.getElementById('m-cobra').textContent = svc.COBRA;
+}
+
+function renderRFPList() {
+  const list = document.getElementById('rfpList');
+  let filtered = allRFPs;
+  if (currentView === 'new') filtered = allRFPs.filter(r => !seenRFPs[rfpKey(r)]);
+  if (currentView === 'seen') filtered = allRFPs.filter(r => !!seenRFPs[rfpKey(r)]);
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div>${currentView==='seen'?'No seen RFPs yet.':currentView==='new'?'All RFPs marked as seen.':'No results.'}</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(rfp => {
+    const key = rfpKey(rfp);
+    const isSeen = !!seenRFPs[key];
+    const seenDate = seenRFPs[key]||'';
+    const svcBadges = (rfp.services||[]).map(s => `<span class="badge b-${s.toLowerCase()}">${s}</span>`).join('');
+    const entBadge = rfp.entityType==='government' ? '<span class="badge b-gov">Gov</span>'
+      : rfp.entityType==='school' ? '<span class="badge b-school">School</span>'
+      : '<span class="badge b-corp">Corp</span>';
+    const dlClass = rfp.isUrgent ? 'deadline urgent' : 'deadline';
+    const dlText = rfp.deadline && rfp.deadline!=='Not specified' ? '⏱ '+rfp.deadline : '';
+    const srcLink = rfp.sourceUrl ? `<a href="${rfp.sourceUrl}" target="_blank">${rfp.sourceName||rfp.sourceUrl}</a>` : (rfp.sourceName||'');
+    const safeKey = key.replace(/[^a-z0-9]/g,'_');
+    return `<div class="rfp-card${isSeen?' is-seen':''}" id="card-${safeKey}">
+      <div class="card-top">
+        <div class="rfp-title">${!isSeen?'<span class="badge b-new" style="margin-right:5px;">NEW</span>':''}${rfp.title||'Untitled'}</div>
+        <button class="seen-btn ${isSeen?'seen':'unseen'}" onclick="toggleSeen('${key}',this,this.closest('.rfp-card'))">${isSeen?eyeOn()+' Seen':eyeOff()+' Mark seen'}</button>
+      </div>
+      <div class="rfp-org">${rfp.organization||''}</div>
+      <div class="badge-row">${entBadge}${svcBadges}${dlText?`<span class="${dlClass}">${dlText}</span>`:''}</div>
+      ${rfp.description?`<div class="rfp-desc">${rfp.description}</div>`:''}
+      ${srcLink?`<div class="rfp-source">Source: ${srcLink}${rfp.postedDate&&rfp.postedDate!=='Unknown'?' · '+rfp.postedDate:''}</div>`:''}
+      ${seenDate?`<div class="seen-date">Marked seen ${seenDate}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderTrackerPage() {
+  const el = document.getElementById('trackerContent');
+  const seenKeys = Object.keys(seenRFPs);
+  if (!seenKeys.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">👁</div><div>No RFPs marked as seen yet.<br>Run a search and mark RFPs as you review them.</div></div>';
+    return;
+  }
+  const seenItems = allRFPs.filter(r => !!seenRFPs[rfpKey(r)]);
+  if (!seenItems.length) {
+    el.innerHTML = `<div class="empty-state"><div>${seenKeys.length} RFPs marked seen, but from a previous session. Run a new search to see them here.</div></div>`;
+    return;
+  }
+  el.innerHTML = seenItems.map(rfp => {
+    const key = rfpKey(rfp);
+    const seenDate = seenRFPs[key]||'';
+    const svcBadges = (rfp.services||[]).map(s => `<span class="badge b-${s.toLowerCase()}">${s}</span>`).join('');
+    const entBadge = rfp.entityType==='government'?'<span class="badge b-gov">Gov</span>':rfp.entityType==='school'?'<span class="badge b-school">School</span>':'<span class="badge b-corp">Corp</span>';
+    const srcLink = rfp.sourceUrl?`<a href="${rfp.sourceUrl}" target="_blank">${rfp.sourceName||rfp.sourceUrl}</a>`:(rfp.sourceName||'');
+    const safeKey = key.replace(/[^a-z0-9]/g,'_');
+    return `<div class="rfp-card is-seen" id="tracker-${safeKey}">
+      <div class="card-top">
+        <div class="rfp-title">${rfp.title||'Untitled'}</div>
+        <button class="seen-btn seen" onclick="toggleSeen('${key}',this,this.closest('.rfp-card'));renderTrackerPage()">${eyeOn()} Seen</button>
+      </div>
+      <div class="rfp-org">${rfp.organization||''}</div>
+      <div class="badge-row">${entBadge}${svcBadges}</div>
+      ${srcLink?`<div class="rfp-source">Source: ${srcLink}</div>`:''}
+      ${seenDate?`<div class="seen-date">Reviewed ${seenDate}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function saveToDrive() {
+  alert('To save to Google Drive, use the Claude.ai version of this agent where your Google Drive is connected.\n\nYou can also copy the results from this dashboard manually.');
+}
+
+// ── CONSULTANT LOOKUP ──
+let allConsultants = [];
+let contactedConsultants = {};
+let consView = 'all';
+const CONS_STORAGE_KEY = 'rfp_consultants_contacted_v1';
+
+function loadContacted() {
+  try { const s = localStorage.getItem(CONS_STORAGE_KEY); if (s) contactedConsultants = JSON.parse(s); } catch(e) {}
+  updateClearContactedBtn();
+}
+
+function saveContacted() {
+  try { localStorage.setItem(CONS_STORAGE_KEY, JSON.stringify(contactedConsultants)); } catch(e) {}
+}
+
+function consKey(c) {
+  return ((c.name||'')+'|'+(c.firm||'')).toLowerCase().replace(/\s+/g,'_').slice(0,80);
+}
+
+function updateClearContactedBtn() {
+  const has = Object.keys(contactedConsultants).length > 0;
+  const btn = document.getElementById('clearContactedBtn');
+  if (btn) btn.style.display = has ? 'inline' : 'none';
+}
+
+function setConsView(v, el) {
+  consView = v;
+  document.querySelectorAll('.cons-view-tabs .vtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderConsultantList();
+}
+
+function setConsStatus(msg, loading) {
+  const bar = document.getElementById('consStatusBar');
+  bar.innerHTML = msg ? (loading ? '<div class="spinner"></div>' : '') + '<span>'+msg+'</span>' : '';
+}
+
+async function toggleContacted(key, btn, cardEl) {
+  if (contactedConsultants[key]) {
+    delete contactedConsultants[key];
+    btn.className = 'contacted-btn not-contacted';
+    btn.innerHTML = phoneIcon(false) + ' Mark contacted';
+    cardEl.classList.remove('is-contacted');
+    const cd = cardEl.querySelector('.contacted-date'); if (cd) cd.remove();
+  } else {
+    const now = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    contactedConsultants[key] = now;
+    btn.className = 'contacted-btn contacted';
+    btn.innerHTML = phoneIcon(true) + ' Contacted';
+    cardEl.classList.add('is-contacted');
+    let cd = cardEl.querySelector('.contacted-date');
+    if (!cd) { cd = document.createElement('div'); cd.className='contacted-date'; cardEl.appendChild(cd); }
+    cd.textContent = 'Contacted ' + now;
+  }
+  saveContacted();
+  updateClearContactedBtn();
+  updateConsSidebarStats();
+  updateConsTabCounts();
+  if (consView !== 'all') renderConsultantList();
+}
+
+function phoneIcon(filled) {
+  return filled
+    ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>'
+    : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .9h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>';
+}
+
+function clearContacted() {
+  contactedConsultants = {};
+  saveContacted();
+  renderConsultantList();
+  updateClearContactedBtn();
+  updateConsSidebarStats();
+  updateConsTabCounts();
+}
+
+function updateConsSidebarStats() {
+  const total = allConsultants.length;
+  const contacted = allConsultants.filter(c => !!contactedConsultants[consKey(c)]).length;
+  document.getElementById('sb-consultants').textContent = total || '—';
+  document.getElementById('sb-contacted').textContent = contacted || '—';
+  const nb = document.getElementById('consultantBadge');
+  const notContacted = total - contacted;
+  if (notContacted > 0) { nb.style.display='inline'; nb.textContent=notContacted; } else { nb.style.display='none'; }
+}
+
+function updateConsTabCounts() {
+  const total = allConsultants.length;
+  const contacted = allConsultants.filter(c => !!contactedConsultants[consKey(c)]).length;
+  const notContacted = total - contacted;
+  document.getElementById('cvt-all').textContent = total;
+  document.getElementById('cvt-new').textContent = notContacted;
+  document.getElementById('cvt-contacted').textContent = contacted;
+}
+
+function renderConsMetrics() {
+  const total = allConsultants.length;
+  const contacted = allConsultants.filter(c => !!contactedConsultants[consKey(c)]).length;
+  const withEmail = allConsultants.filter(c => c.email && c.email !== 'Not found').length;
+  const withPhone = allConsultants.filter(c => c.phone && c.phone !== 'Not found').length;
+  document.getElementById('cm-total').textContent = total;
+  document.getElementById('cm-new').textContent = total - contacted;
+  document.getElementById('cm-contacted').textContent = contacted;
+  document.getElementById('cm-email').textContent = withEmail;
+  document.getElementById('cm-phone').textContent = withPhone;
+}
+
+function renderConsultantList() {
+  const list = document.getElementById('consultantList');
+  let filtered = allConsultants;
+  if (consView === 'new') filtered = allConsultants.filter(c => !contactedConsultants[consKey(c)]);
+  if (consView === 'contacted') filtered = allConsultants.filter(c => !!contactedConsultants[consKey(c)]);
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div>${consView==='contacted'?'No consultants contacted yet.':consView==='new'?'All consultants have been contacted!':'No consultants found.'}</div></div>`;
+    return;
+  }
+
+  const svcColors = {HSA:'b-hsa',FSA:'b-fsa',LSA:'b-lsa',COBRA:'b-cobra'};
+
+  list.innerHTML = filtered.map(c => {
+    const key = consKey(c);
+    const isContacted = !!contactedConsultants[key];
+    const contactedDate = contactedConsultants[key]||'';
+    const safeKey = key.replace(/[^a-z0-9]/g,'_');
+    const specs = (c.specialties||[]).map(s => `<span class="badge ${svcColors[s]||'b-gov'}">${s}</span>`).join('');
+    const emailHtml = c.email && c.email!=='Not found'
+      ? `<span class="cons-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:${c.email}">${c.email}</a></span>` : '';
+    const phoneHtml = c.phone && c.phone!=='Not found'
+      ? `<span class="cons-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .9h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>${c.phone}</span>` : '';
+    const locationHtml = c.location
+      ? `<span class="cons-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${c.location}</span>` : '';
+    const websiteHtml = c.website && c.website!=='Not found'
+      ? `<span class="cons-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg><a href="${c.website}" target="_blank">${c.website.replace(/^https?:\/\//,'')}</a></span>` : '';
+
+    return `<div class="consultant-card${isContacted?' is-contacted':''}" id="cons-${safeKey}">
+      <div class="cons-top">
+        <div>
+          <div class="cons-name">${c.name||'Unknown'}</div>
+          <div class="cons-firm">${c.firm||''}</div>
+        </div>
+        <button class="contacted-btn ${isContacted?'contacted':'not-contacted'}" onclick="toggleContacted('${key}',this,this.closest('.consultant-card'))">${isContacted?phoneIcon(true)+' Contacted':phoneIcon(false)+' Mark contacted'}</button>
+      </div>
+      <div class="cons-meta">${locationHtml}${emailHtml}${phoneHtml}${websiteHtml}</div>
+      ${specs ? `<div class="cons-specialties">${specs}</div>` : ''}
+      ${c.description ? `<div class="cons-desc">${c.description}</div>` : ''}
+      ${contactedDate ? `<div class="contacted-date">Contacted ${contactedDate}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function runConsultantSearch() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey) { setConsStatus('Please enter your Anthropic API key on the Search page first.', false); return; }
+
+  const btn = document.getElementById('consRunBtn');
+  btn.disabled = true;
+  allConsultants = [];
+  document.getElementById('consResultsPanel').style.display = 'none';
+  document.getElementById('consMetricsRow').style.display = 'none';
+
+  const state = document.getElementById('consStateFilter').value;
+  const firm = document.getElementById('consFirmInput').value.trim();
+  const keywords = document.getElementById('consKeywordInput').value.trim();
+
+  const statePart = state ? ` in ${state}` : ' across the United States';
+  const firmPart = firm ? ` Focus on or near the firm "${firm}".` : '';
+  const kwPart = keywords ? ` Additional context: ${keywords}.` : '';
+
+  setConsStatus('Searching for benefit consultants…', true);
+
+  const prompt = `You are a benefits industry researcher. Search the web and find benefit consultants and consulting firms${statePart} who specialize in HSA, FSA, LSA, and/or COBRA administration services for employers, government entities, and schools.${firmPart}${kwPart}
+
+For each consultant or firm found, return a JSON array with objects containing:
+- name: consultant's full name (or firm contact name if individual not found)
+- firm: firm/company name
+- location: city and state
+- specialties: array from [HSA, FSA, LSA, COBRA, Benefits Administration, TPA]
+- email: professional email address if publicly available (or "Not found")
+- phone: phone number if publicly available (or "Not found")
+- website: firm website URL (or "Not found")
+- description: 1-2 sentence summary of their focus/specialty
+
+Search LinkedIn, firm websites, SHRM directories, NAHU (National Association of Health Underwriters), BenefitsPRO, and state insurance department licensee directories.
+
+Return ONLY a valid JSON array, no markdown, no preamble. Find at least 6-10 results if possible.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      setConsStatus('API error: ' + (err.error?.message || res.statusText), false);
+      btn.disabled = false;
+      return;
+    }
+
+    const data = await res.json();
+    setConsStatus('Processing results…', true);
+
+    const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+    let jsonStr = textBlocks.replace(/```json|```/g,'').trim();
+    const s = jsonStr.indexOf('['), e = jsonStr.lastIndexOf(']');
+    if (s !== -1 && e !== -1) jsonStr = jsonStr.slice(s, e+1);
+
+    let consultants = [];
+    try { consultants = JSON.parse(jsonStr); } catch(err) { consultants = []; }
+
+    allConsultants = consultants;
+    setConsStatus('');
+
+    if (consultants.length > 0) {
+      document.getElementById('consResultsPanel').style.display = '';
+      document.getElementById('consMetricsRow').style.display = '';
+      renderConsMetrics();
+      renderConsultantList();
+      updateConsSidebarStats();
+      updateConsTabCounts();
+      addActivity(`Found ${consultants.length} benefit consultants${state ? ' in '+state : ''}`, 'green');
+    } else {
+      setConsStatus('No consultants found. Try a different state or keyword.');
+      addActivity('Consultant search returned no results', 'amber');
+    }
+  } catch(err) {
+    setConsStatus('Search failed: ' + err.message);
+  }
+
+  btn.disabled = false;
+}
+
+function updateClock() {
+  document.getElementById('clockEl').textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
+}
+
+loadSeen();
+loadContacted();
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
